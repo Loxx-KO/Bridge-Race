@@ -21,7 +21,8 @@ public class PlayerLogic : MonoBehaviour, IBlockCollector
     [Header("Physics")]
     public Rigidbody rb;
     public CapsuleCollider capsuleCollider;
-    public float playerHeight;
+    private float playerHeight;
+    private bool canPlay = true;
 
     [Header("Other refs")]
     private Camera mainCam;
@@ -220,8 +221,6 @@ public class PlayerLogic : MonoBehaviour, IBlockCollector
             {
                 enemy.GetComponent<AIController>().DropBlocks(direction);
             }
-            //shake camera
-            //Camera_Shake.Instance.ShakeCamera(shakeStrength, shakeDuration);
         }
     }
 
@@ -232,11 +231,27 @@ public class PlayerLogic : MonoBehaviour, IBlockCollector
         rb.velocity = Vector3.zero;
     }
 
+    public void FinishGame(Vector3 pos)
+    {
+        canPlay = false;
+
+        for (int i = blocks.Count - 1; i >= 0; i--)
+        {
+            DropBlock(i);
+        }
+
+        transform.position = pos;
+        transform.rotation = new Quaternion(0, 0, -1, transform.rotation.w);
+    }
+
     void Update()
     {
-        UpdateMovementFromControls();
-        UpdateDirection();
-        Move();
+        if (canPlay)
+        {
+            UpdateMovementFromControls();
+            UpdateDirection();
+            Move();
+        }
     }
 
     private void OnDrawGizmos()

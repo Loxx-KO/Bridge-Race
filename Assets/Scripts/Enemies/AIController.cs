@@ -5,8 +5,8 @@ using UnityEngine;
 public class AIController : MonoBehaviour, IBlockCollector
 {
     [Header("Horizontal movement")]
-    private float movementSpeed = 1.3f;
-    private float maxVelocity = 2f;
+    private float movementSpeed = 2f;
+    private float maxVelocity = 3f;
     Vector3 direction = Vector3.zero;
     public float rotationSpeed = 600f;
 
@@ -17,7 +17,8 @@ public class AIController : MonoBehaviour, IBlockCollector
     [Header("Physics")]
     public Rigidbody rb;
     public CapsuleCollider capsuleCollider;
-    public float aiHeight;
+    private float aiHeight;
+    private bool canPlay = true;
 
     [Header("Other refs")]
     public Material material;
@@ -33,9 +34,9 @@ public class AIController : MonoBehaviour, IBlockCollector
     public float recoilForce = 10f;
 
     [Header("BlockCollection")]
-    public int blockslvl = 0;
-    private bool lvlChanged = false;
     public Vector3 destinationPoint;
+    private int blockslvl = 0;
+    private bool lvlChanged = false;
     public int blocksToCollect = 2;
     public int blocksToCollectMax = 5;
     public int blocksToCollectMin = 1;
@@ -48,7 +49,7 @@ public class AIController : MonoBehaviour, IBlockCollector
 
     private bool isGoingToBuild = false;
     private bool isBulding = false;
-    int slopeNum;
+    private int slopeNum;
     private bool blockChoosen = false;
 
     void Start()
@@ -336,13 +337,29 @@ public class AIController : MonoBehaviour, IBlockCollector
         GoTryPlaceBlocks();
     }
 
+    public void FinishGame(Vector3 pos)
+    {
+        canPlay = false;
+
+        for (int i = blocks.Count - 1; i >= 0; i--)
+        {
+            DropBlock(i);
+        }
+
+        transform.position = pos;
+        transform.rotation = new Quaternion(0, 0, -1, transform.rotation.w);
+    }
+
     void Update()
     {
-        DecideAction();
-        UpdateDirection();
-        Move();
-        //check if player can push enemies while moving
-        PushEnemy();
+        if (canPlay)
+        {
+            DecideAction();
+            UpdateDirection();
+            Move();
+            //check if player can push enemies while moving
+            PushEnemy();
+        }
     }
 
     private void OnDrawGizmos()
