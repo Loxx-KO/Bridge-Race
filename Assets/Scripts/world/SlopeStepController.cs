@@ -11,6 +11,7 @@ public class SlopeStepController : MonoBehaviour
     [Header("Values")]
     public bool isTaken = false;
     public string ownerName;
+    public bool isTheExit = false;
 
     private void Start()
     {
@@ -24,26 +25,21 @@ public class SlopeStepController : MonoBehaviour
     {
         if (!isTaken)
         {
-            if (other.name == "Player")
-            {
-                PlaceBlockPlayer(other);
-            }
-            //for ai
+            if (other.name == "Player") PlaceBlockPlayer(other);
+            else if (other.name == "AI1" || other.name == "AI2" || other.name == "AI3") PlaceBlockAI(other);
         }
         else
         {
             if (other.name == "Player")
             {
-                if (ownerName == other.name)
-                {
-                    invisibleWall.enabled = false;
-                }
-                else 
-                { 
-                    PlaceBlockPlayer(other); 
-                }
+                if (ownerName == other.name) invisibleWall.enabled = false;
+                else PlaceBlockPlayer(other); 
             }
-            //for ai
+            else if(other.name == "AI1" || other.name == "AI2" || other.name == "AI3")
+            {
+                if (ownerName == other.name) invisibleWall.enabled = false;
+                else PlaceBlockAI(other);
+            }
         }
     }
 
@@ -61,13 +57,39 @@ public class SlopeStepController : MonoBehaviour
             }
             else if (other.GetComponent<PlayerLogic>().CheckIfPlayerHasBlocks() == 0)
             {
-                invisibleWall.enabled = true;
+                if(!isTheExit) invisibleWall.enabled = true;
+                else invisibleWall.enabled = false;
             }
         }
-        else
+        /*else if noone on slope
         {
             invisibleWall.enabled = true;
+        }*/
+    }
+
+    private void PlaceBlockAI(Collider other)
+    {
+        if (other.GetComponent<AIController>().CheckIfPlayerHasBlocks() > 0)
+        {
+            other.GetComponent<AIController>().PlaceBlock(this);
+            GetComponent<MeshRenderer>().material = material;
+            ownerName = other.name;
+
+            if (other.GetComponent<AIController>().CheckIfPlayerHasBlocks() >= 1)
+            {
+                invisibleWall.enabled = false;
+            }
+            else if (other.GetComponent<AIController>().CheckIfPlayerHasBlocks() == 0)
+            {
+                if (!isTheExit) invisibleWall.enabled = true;
+                else invisibleWall.enabled = false;
+
+            }
         }
+        /*else
+        {
+            invisibleWall.enabled = true;
+        }*/
     }
 
     private void OnTriggerExit(Collider other)

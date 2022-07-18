@@ -9,6 +9,7 @@ public class BlockController : MonoBehaviour
     public MeshRenderer meshRenderer;
     public BoxCollider boxCollider;
     public Material material;
+    public List<Material> playersMaterials;
 
     [Header("Values")]
     public string blockLvl;
@@ -18,34 +19,38 @@ public class BlockController : MonoBehaviour
     public bool isHeld = false;
     public float sizeY;
 
-    void Start()
+    private void Awake()
     {
         blockLocalPos = GetComponent<Transform>().position;
         defaultBlockPos = GetComponent<Transform>().position;
-        material = GetComponent<MeshRenderer>().material;
         sizeY = GetComponent<BoxCollider>().size.y * GetComponent<Transform>().localScale.y * 2;
         meshRenderer = GetComponent<MeshRenderer>();
+        ChangeMaterial();
         boxCollider = GetComponent<BoxCollider>();
-        blockLvl = blocks.name.Substring(blocks.name.Length-1, 1);
+        blockLvl = blocks.name.Substring(blocks.name.Length - 1, 1);
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (!isHeld)
         {
-            if (other.name == "Player")
+            if (other.GetComponent<MeshRenderer>().material.name.Split()[0] == material.name.Split()[0])
             {
-                //for player
-                other.GetComponent<PlayerLogic>().CollectBlock(this);
+                other.GetComponent<IBlockCollector>().CollectBlock(this);
                 transform.position = blockLocalPos;
-                Debug.Log("Collected");
             }
-            //for ai
         }
     }
     private void OnTriggerExit(Collider other)
     {
         
+    }
+
+    private void ChangeMaterial()
+    {
+        int colorIndex = Random.Range(0, playersMaterials.Count);
+        material = playersMaterials[colorIndex];
+        meshRenderer.material = material;
     }
 
     void Update()
@@ -55,8 +60,8 @@ public class BlockController : MonoBehaviour
         {
             transform.SetParent(blocks);
             transform.position = defaultBlockPos;
-            meshRenderer.enabled = false;
-            boxCollider.enabled = false;
+            transform.rotation = new Quaternion(0, 0, 0, transform.rotation.w);
+            ChangeMaterial();
         }
         else if(isHeld)
         {

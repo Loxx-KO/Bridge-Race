@@ -2,12 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerLogic : MonoBehaviour
+public class PlayerLogic : MonoBehaviour, IBlockCollector
 {
     [Header("Horizontal movement")]
-    private float movementSpeed = 1.5f;
+    private float movementSpeed = 2f;
+    private float maxVelocity = 4f;
     Vector3 direction = Vector3.zero;
-    public float rotationSpeed = 2f;
+    public float rotationSpeed = 500f;
 
     [Header("Slope Handling")]
     public float maxSlopeAngle = 50;
@@ -25,7 +26,7 @@ public class PlayerLogic : MonoBehaviour
     [Header("Other refs")]
     private Camera mainCam;
     public Material material;
-    public List<BlockController> blocksGameObjects;
+    public List<BlockController> blocks;
 
     [Header("Anim")]
     public Animator animator;
@@ -34,6 +35,7 @@ public class PlayerLogic : MonoBehaviour
     public float attackPointRadius;
     public Transform attackPoint;
     public LayerMask enemyMask;
+    public float recoilForce = 10f;
 
     void Start()
     {
@@ -42,7 +44,7 @@ public class PlayerLogic : MonoBehaviour
         capsuleCollider = GetComponent<CapsuleCollider>();
 
         playerHeight = capsuleCollider.height;
-        blocksGameObjects = new List<BlockController>();
+        blocks = new List<BlockController>();
         material = GetComponent<MeshRenderer>().material;
     }
     public void UpdateMovementFromControls()
@@ -53,7 +55,6 @@ public class PlayerLogic : MonoBehaviour
 
     public void UpdateDirection()
     {
-        //still funky
         if (touchDirection == Vector2.zero && canMove) return;
 
         direction.x = touchDirection.x;
@@ -94,6 +95,10 @@ public class PlayerLogic : MonoBehaviour
                 rb.velocity = rb.velocity.normalized * movementSpeed;
             }
         }
+        else
+        {
+            if (rb.velocity.magnitude > maxVelocity) rb.velocity = rb.velocity.normalized * movementSpeed;
+        }
     }
 
     public void Move()
@@ -106,13 +111,16 @@ public class PlayerLogic : MonoBehaviour
             {
                 rb.AddForce(GetSlopeMoveDirection() * movementSpeed);
 
-                if(rb.velocity.y > 0)
+                if (rb.velocity.y > 0)
                 {
-                    rb.AddForce(Vector3.down * (movementSpeed/4));
+                    rb.AddForce(Vector3.down * (movementSpeed / 4));
                 }
             }
             else
+            {
                 rb.AddForce(direction * movementSpeed);
+                //rb.AddForce(direction * 10f);
+            }
 
             RotateWhileMoving();
 
@@ -131,7 +139,7 @@ public class PlayerLogic : MonoBehaviour
             Quaternion toRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, toRotation, rotationSpeed * Time.deltaTime);
             
-            foreach(BlockController block in blocksGameObjects)
+            foreach(BlockController block in blocks)
             {
                 block.blockRotation = Quaternion.RotateTowards(transform.rotation, toRotation, rotationSpeed * Time.deltaTime);
             }
@@ -142,56 +150,63 @@ public class PlayerLogic : MonoBehaviour
     {
         if (!block.isHeld)
         {
-            if (blocksGameObjects.Count == 0)
+            if (block.material.name == material.name.Split()[0])
             {
-                block.blockLocalPos = new Vector3(0, playerHeight / 2,
-                    transform.position.z - capsuleCollider.radius * 2);
-                block.transform.SetParent(transform);
+                if (blocks.Count == 0)
+                {
+                    block.blockLocalPos = new Vector3(0, playerHeight / 2,
+                        transform.position.z - capsuleCollider.radius * 2);
+                    block.transform.SetParent(transform);
 
-                block.isHeld = true;
-                blocksGameObjects.Add(block);
+                    block.isHeld = true;
+                    blocks.Add(block);
 
-            }
-            else if (blocksGameObjects.Count > 0)
-            {
-                block.blockLocalPos = new Vector3(0, (playerHeight/2) + (block.sizeY/4) * blocksGameObjects.Count,
-                    transform.position.z - capsuleCollider.radius * 2);
-                block.transform.SetParent(transform);
+                }
+                else if (blocks.Count > 0)
+                {
+                    block.blockLocalPos = new Vector3(0, (playerHeight / 2) + (block.sizeY / 4) * blocks.Count,
+                        transform.position.z - capsuleCollider.radius * 2);
+                    block.transform.SetParent(transform);
 
-                block.isHeld = true;
-                blocksGameObjects.Add(block);
+                    block.isHeld = true;
+                    blocks.Add(block);
+                }
             }
         }
     }
 
     public int CheckIfPlayerHasBlocks()
     {
-        return blocksGameObjects.Count;
+        return blocks.Count;
     }
 
     public void PlaceBlock(SlopeStepController step)
     {
-        DropBlock(blocksGameObjects.Count - 1);
+        DropBlock(blocks.Count - 1);
         step.material = material;
         step.isTaken = true;
     }
 
     public void DropBlock(int i)
     {
-        BlockController block = blocksGameObjects[i];
+        BlockController block = blocks[i];
         block.blockLocalPos = block.defaultBlockPos;
         block.isHeld = false;
-        blocksGameObjects.RemoveAt(i);
+        blocks.RemoveAt(i);
     }
 
-    public void DropAllBlocks()
+    public void DropBlocks(Vector3 hitDir)
     {
-        if(blocksGameObjects.Count > 0)
+        if(blocks.Count > 0)
         {
-            for(int i = blocksGameObjects.Count - 1; i > 0; i--)
+            for(int i = blocks.Count - 1; i >= 0; i--)
             {
                 DropBlock(i);
             }
+
+            Vector3 force = recoilForce * -hitDir;
+            rb.AddForce(force);
+            rb.velocity = Vector3.zero;
         }
     }
 
@@ -203,11 +218,18 @@ public class PlayerLogic : MonoBehaviour
         {
             foreach (Collider enemy in hitEnemies)
             {
-                enemy.GetComponent<IEnemyController>().DropBlocks();
+                enemy.GetComponent<AIController>().DropBlocks(direction);
             }
             //shake camera
             //Camera_Shake.Instance.ShakeCamera(shakeStrength, shakeDuration);
         }
+    }
+
+    public void PushBack()
+    {
+        Vector3 force = recoilForce * 3 * -direction.z * Vector3.forward;
+        rb.AddForce(force);
+        rb.velocity = Vector3.zero;
     }
 
     void Update()
