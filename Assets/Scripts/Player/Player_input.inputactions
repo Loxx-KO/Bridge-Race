@@ -101,7 +101,7 @@
                     "name": "Click",
                     "type": "PassThrough",
                     "id": "09f7cccc-4502-4e49-b308-8d87a60ae35c",
-                    "expectedControlType": "Touch",
+                    "expectedControlType": "Button",
                     "processors": "",
                     "interactions": ""
                 }

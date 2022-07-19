@@ -10,7 +10,6 @@ public class InputManagerScript : MonoBehaviour
 {
     public static Player_input inputActions;
     public static event Action<InputActionMap> actionMapChange;
-    private Touch touch;
 
     Vector2 touchPos = Vector2.zero;
     Vector2 touchDirection = Vector2.zero;
