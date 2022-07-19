@@ -51,8 +51,6 @@ public class InputManagerScript : MonoBehaviour
     private void ReadTouch()
     {
 
-        //Debug.Log(inputActions.Player.Touch.phase);
-
         if (inputActions.Player.Touch.phase == InputActionPhase.Started)
         {
             if (touchPos != Vector2.zero)

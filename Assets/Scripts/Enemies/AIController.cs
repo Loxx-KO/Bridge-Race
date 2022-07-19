@@ -5,8 +5,8 @@ using UnityEngine;
 public class AIController : MonoBehaviour, IBlockCollector
 {
     [Header("Horizontal movement")]
-    private float movementSpeed = 2f;
-    private float maxVelocity = 3f;
+    private float movementSpeed = 1.2f;
+    private float maxVelocity = 2f;
     Vector3 direction = Vector3.zero;
     public float rotationSpeed = 600f;
 
